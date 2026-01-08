@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>EmulatorJS UI</title>
+
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    background:#000;
+    overflow:hidden;
+    touch-action:none;
+}
+
+#root{
+    position:fixed;
+    width:480px;
+    height:320px;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    z-index:1;
+}
+
+/* ===== EMULADOR ===== */
+#game{
+    position:absolute;
+    width:480px;
+    height:320px;
+    z-index:1;
+}
+
+/* Moldura transparente */
+#frame{
+    position:absolute;
+    width:480px;
+    height:320px;
+    background:url("C2_Back.png") no-repeat;
+    background-size:cover;
+    display:none;
+    pointer-events:none;
+    z-index:1;
+}
+
+/* ===== START ===== */
+#btnStart{
+    position:absolute;
+    opacity:0.5;
+    top:20px;
+    left:90%;
+    transform:translateX(-50%);
+    width:80px;
+    height:25px;
+    z-index:6;
+}
+
+/* ===== BOTÃO SPACE ===== */
+#btnSpace{
+    position:absolute;
+    opacity:0.5;
+    bottom:20px;
+    right:20px;
+    width:88px;
+    height:88px;
+    z-index:6;
+}
+
+/* ===== MENU ===== */
+#menu{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    display:none;
+    z-index:7;
+}
+.menuBtn{
+    display:block;
+    margin:10px auto;
+}
+
+/* ===== BOTÃO ESPECIAL ===== */
+#specialBtn{
+    position:absolute;
+    top:20px;
+    right:20px;
+    width:64px;
+    height:64px;
+    z-index:6;
+}
+
+/* ===== OVERLAY ===== */
+#overlay {
+    position:absolute;
+    width:100%;
+    height:100%;
+    display:none;
+    z-index:8;
+    pointer-events:auto;
+}
+#overlayImg {
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:url("Sonic-iPhone_PromoFrame.png") no-repeat;
+    background-size:cover;
+    z-index:9; /* sobre a imagem */
+    pointer-events:none; /* impede que bloqueie clique nos vídeos */
+}
+.video {
+    position:absolute;
+    width:114px;
+    height:114px;
+    z-index:8; /* abaixo da imagem, mas acima do resto */
+    pointer-events:auto; /* garante clique nos vídeos */
+}
+#video1{ top:110px; left:18px; }
+#video2{ top:110px; right:182px; }
+
+/* ===== D-PAD ÚNICO ===== */
+#dpad{
+    position:absolute;
+    opacity:0.5;
+    bottom:20px;
+    left:20px;
+    width:115px;
+    height:115px;
+    z-index:6;
+}
+
+.menuBtnContainer {
+    position: relative;
+    display: inline-block; /* mantém os botões lado a lado */
+}
+
+.menuBtnText {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* centraliza o texto */
+    color: white; /* ajusta conforme a imagem */
+    font-weight: bold;
+    pointer-events: none; /* evita que o texto interfira no clique */
+}
+
+#bg{
+    position:fixed;
+    inset:0;
+    background:url("megadrive-background.jpg") no-repeat center;
+    background-size:cover;
+    z-index:0;
+}
+
+#tiles{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    display:none;
+    z-index:0;
+}
+
+/* DIREITA — normal */
+#tiles::after{
+    content:"";
+    position:absolute;
+    top:50%;
+    left:calc(50vw + 240px);
+    width:calc(50vw - 240px);
+    height:320px;
+    transform:translateY(-50%);
+    background:url("tile.png") repeat-x;
+}
+
+/* ESQUERDA — espelhado */
+#tiles::before{
+    content:"";
+    position:absolute;
+    top:50%;
+    right:calc(50vw + 240px);
+    width:calc(50vw - 240px);
+    height:320px;
+    transform:translateY(-50%) scaleX(-1);
+    background:url("tile.png") repeat-x;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="bg"></div>
+<div id="root">
+    <div id="frame"></div>
+    <div id="game"></div>
+
+    <div id="sp">
+        <img id="specialBtn" src="Menu_Button_Moon_normal.png">
+    </div>
+
+    <div id="menu">
+        <div class="menuBtnContainer">
+            <img id="btnResume" class="menuBtn" src="Menu_Button_normal.png">
+            <span class="menuBtnText">Resume</span>
+        </div>
+        <div class="menuBtnContainer">
+            <img id="btnFrame" class="menuBtn" src="Menu_Button_normal.png">
+            <span class="menuBtnText">Custom UI</span>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div id="overlayImg"></div>
+        <iframe id="video1" class="video" src="https://www.youtube.com/embed/ESEf089-6Xs?enablejsapi=1"></iframe>
+        <iframe id="video2" class="video" src="https://www.youtube.com/embed/RW3eBWQ1IyQ?enablejsapi=1"></iframe>
+    </div>
+
+</div>
+<div id="tiles"></div>
+<img id="btnStart" src="C2_Start_NotPressed.png">
+<img id="btnSpace" src="A_Button_NotPressed.png">
+<img id="dpad" src="C2_DPAD_NotPressed.png">
+
+<!-- EmulatorJS -->
+<script src="data/loader.js"></script>
+<script>
+EJS_player = "#game";
+EJS_core = "segaMD";
+EJS_gameUrl = "Sonic_The_Hedgehog_W_REV01_h3C.bin";
+EJS_pathtodata = "data/";
+EJS_showVirtualPad = false;
+</script>
+
+<script>
+sp.style.display="none";
+
+let stct = 0;
+
+let useStart = false;
+let check = false;
+const interval = setInterval(() => {
+  const AL = EJS_emulator?.Module?.AL;
+  if (!AL || !AL.currentCtx) return;
+  let playing = false;
+  AL.currentCtx.sources.forEach(src => {
+    if (src.playbackState === src.PLAYING_STATE) {
+      playing = true;
+    }
+  });
+  if (!useStart && playing) {
+    useStart = true;
+    setTimeout(() => { check = true; setTimeout(() => { stct++; }, 7000); }, 9500);
+    clearInterval(interval);
+  }
+}, 100);
+
+function focusEmulator(){
+    const el = document.querySelector(EJS_player);
+    if (el) el.focus();
+}
+
+/* ===== TECLAS ===== */
+let pressed = [];
+
+const KEYMAP = {
+    ArrowUp: 4,
+    ArrowDown: 5,
+    ArrowLeft: 6,
+    ArrowRight: 7,
+    Z: 0,
+    Enter: 3
+};
+
+function sendKeyToEmulator(index, pressed) {
+    if (!window.EJS_emulator || !EJS_emulator.gameManager) return;
+    EJS_emulator.gameManager.simulateInput(0, index, pressed ? 1 : 0);
+}
+
+function press(k){
+    if (pressed.includes(k)) return;
+    pressed.push(k);
+    sendKeyToEmulator(KEYMAP[k], true);
+}
+
+function releaseAll(){
+    pressed.forEach(k => {
+        sendKeyToEmulator(KEYMAP[k], false);
+    });
+    pressed.length = 0;
+}
+
+/* ===== START / MENU ===== */
+let menuOpen=false;
+btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { openMenu(); } else if (check) { check = false; press("Enter"); stct++; } } }
+function openMenu(){ menu.style.display="block"; sp.style.display="block"; menuOpen=true; btnStart.src="C2_Start_Pressed.png";
+setTimeout(() => {
+    btnStart.src="C2_Start_NotPressed.png";
+    press("Enter");
+}, 100);
+}
+function closeMenu(){ menu.style.display="none"; sp.style.display="none"; menuOpen=false; }
+
+btnResume.ontouchstart=()=> { btnResume.src="Menu_Button_highlighted.png"; 
+setTimeout(() => {
+    btnResume.src="Menu_Button_normal.png";
+    closeMenu(); press("Enter");
+}, 100);
+}
+
+btnResume.ontouchend=()=> { releaseAll(); }
+btnStart.ontouchend = () => { releaseAll(); }
+
+/* ===== FRAME ===== */
+let framed=false;
+btnFrame.onclick = () => {
+    framed = !framed;
+    
+    btnFrame.src="Menu_Button_highlighted.png"; 
+    setTimeout(() => {
+        btnFrame.src="Menu_Button_normal.png";
+    }, 100);
+
+    if (framed) {
+        game.style.top = "3px";
+        game.style.left = "79px";
+        game.style.width = "322px";
+        game.style.height = "226px";
+
+        frame.style.display = "block";
+        tiles.style.display = "block";
+        
+        btnSpace.style.opacity = 1.0;
+        dpad.style.opacity = 1.0;
+
+        // START centralizado e mais baixo
+        btnStart.style.left = "50%";
+        btnStart.style.opacity = 1.0;
+        btnStart.style.top = "80%";
+        btnStart.style.transform = "translateX(-50%)";
+
+    } else {
+        game.style = "";
+        frame.style.display = "none";
+        tiles.style.display = "none";
+        
+        btnSpace.style.opacity = 0.5;
+        dpad.style.opacity = 0.5;
+
+        // START volta ao lugar original
+        btnStart.style.left = "90%";
+        btnStart.style.opacity = 0.5;
+        btnStart.style.top = "20px";
+        btnStart.style.transform = "translateX(-50%)";
+    }
+};
+
+/* ===== OVERLAY ===== */
+specialBtn.onclick=()=> {
+    specialBtn.src="Menu_Button_Moon_highlighted.png";
+    setTimeout(() => {
+        overlay.style.display="block";
+    }, 100);
+};
+overlay.onclick = e => {
+    if (!e.target.closest("iframe")) {
+        overlay.style.display = "none";
+        specialBtn.src = "Menu_Button_Moon_normal.png";
+
+        // Pausar todos os vídeos
+        document.querySelectorAll(".video").forEach(v => {
+            v.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        });
+    }
+};
+
+/* ===== SPACE ===== */
+let spacePressed = false;
+
+btnSpace.ontouchstart = e => {
+    e.preventDefault();
+    if (spacePressed) return;
+    spacePressed = true;
+    sendKeyToEmulator(KEYMAP.Z, true);
+    btnSpace.src = "A_Button_Pressed.png";
+};
+
+btnSpace.ontouchend = e => {
+    e.preventDefault();
+    spacePressed = false;
+    sendKeyToEmulator(KEYMAP.Z, false);
+    btnSpace.src = "A_Button_NotPressed.png";
+};
+
+btnSpace.ontouchcancel = btnSpace.ontouchend;
+
+/* ===== D-PAD 8 DIREÇÕES POR ÂNGULO ===== */
+const dpad=document.getElementById("dpad");
+const center=64;
+const dead=20;
+
+function handleDpadTouch(e){
+    e.preventDefault();
+    const r = dpad.getBoundingClientRect();
+    const t = e.touches[0];
+    const x = t.clientX - r.left - center;
+    const y = t.clientY - r.top - center;
+
+    if(Math.abs(x)<dead && Math.abs(y)<dead){
+        dpad.src="C2_DPAD_NotPressed.png";
+        return;
+    }
+
+    const a = Math.atan2(y, x)*180/Math.PI;
+
+    // Zerar todas antes
+    const keys = [];
+
+    if(a>=-22.5 && a<22.5){
+        keys.push("ArrowRight"); dpad.src="C2_DPad_R.png";
+    }else if(a>=22.5 && a<67.5){
+        keys.push("ArrowDown","ArrowRight"); dpad.src="C2_DPad_RD.png";
+    }else if(a>=67.5 && a<112.5){
+        keys.push("ArrowDown"); dpad.src="C2_DPad_D.png";
+    }else if(a>=112.5 && a<157.5){
+        keys.push("ArrowDown","ArrowLeft"); dpad.src="C2_DPad_LD.png";
+    }else if(a>=157.5 || a<-157.5){
+        keys.push("ArrowLeft"); dpad.src="C2_DPad_L.png";
+    }else if(a>=-157.5 && a<-112.5){
+        keys.push("ArrowUp","ArrowLeft"); dpad.src="C2_DPad_LU.png";
+    }else if(a>=-112.5 && a<-67.5){
+        keys.push("ArrowUp"); dpad.src="C2_DPad_U.png";
+    }else if(a>=-67.5 && a<-22.5){
+        keys.push("ArrowUp","ArrowRight"); dpad.src="C2_DPad_RU.png";
+    }
+
+    // Pressionar todas de uma vez mantendo o estado
+    ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].forEach(k=>{
+        sendKeyToEmulator(KEYMAP[k], false);
+        pressed = pressed.filter(p => p !== k);
+    });
+    keys.forEach(k => press(k));
+}
+
+dpad.ontouchstart = handleDpadTouch;
+dpad.ontouchmove = handleDpadTouch;
+dpad.ontouchend = () => {
+    ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].forEach(k=>{
+        sendKeyToEmulator(KEYMAP[k], false);
+    });
+    dpad.src = "C2_DPAD_NotPressed.png";
+};
+</script>
+
+</body>
+</html>
