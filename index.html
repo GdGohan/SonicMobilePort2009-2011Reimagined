@@ -43,6 +43,28 @@ html,body{
     z-index:1;
 }
 
+#logo{
+    transition: opacity 1s ease;
+    position:absolute;
+    width:480px;
+    height:320px;
+    display:block;
+    background:url("iPhone_Sonic1_Title_480x320.png") no-repeat;
+    background-size:cover;
+    pointer-events:none;
+    z-index:9;
+    pointer-events:auto;
+}
+
+#fadeBlack {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1s ease;
+}
+
 /* ===== START ===== */
 #btnStart{
     position:absolute;
@@ -214,7 +236,8 @@ html,body{
         <iframe id="video1" class="video" src="https://www.youtube.com/embed/ESEf089-6Xs?enablejsapi=1"></iframe>
         <iframe id="video2" class="video" src="https://www.youtube.com/embed/RW3eBWQ1IyQ?enablejsapi=1"></iframe>
     </div>
-
+    <div id="logo"></div>
+    <div id="fadeBlack"></div>
 </div>
 <div id="tiles"></div>
 <img id="btnStart" src="C2_Start_NotPressed.png">
@@ -229,6 +252,8 @@ EJS_core = "segaMD";
 EJS_gameUrl = "Sonic_The_Hedgehog_W_REV01_h3C.bin";
 EJS_pathtodata = "data/";
 EJS_showVirtualPad = false;
+EJS_startOnLoaded = true;
+EJS_hideSettings = true;
 </script>
 
 <script>
@@ -238,18 +263,21 @@ let stct = 0;
 
 let useStart = false;
 let check = false;
+let playing = false;
 const interval = setInterval(() => {
   const AL = EJS_emulator?.Module?.AL;
   if (!AL || !AL.currentCtx) return;
-  let playing = false;
   AL.currentCtx.sources.forEach(src => {
     if (src.playbackState === src.PLAYING_STATE) {
       playing = true;
+      logo.style.opacity = "0";
+      fadeBlack.style.opacity = "1";
+      setTimeout(() => { logo.style.display = "none"; }, 1000);
     }
   });
   if (!useStart && playing) {
     useStart = true;
-    setTimeout(() => { check = true; setTimeout(() => { stct++; }, 7000); }, 9500);
+    setTimeout(() => { check = true; setTimeout(() => { stct++; }, 7000); }, 14000);
     clearInterval(interval);
   }
 }, 100);
@@ -291,19 +319,25 @@ function releaseAll(){
 
 /* ===== START / MENU ===== */
 let menuOpen=false;
-btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { openMenu(); } else if (check) { check = false; press("Enter"); stct++; } } }
+btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { press("Enter"); openMenu(); } else if (check) { check = false; press("Enter"); stct++; } } }
 function openMenu(){ menu.style.display="block"; sp.style.display="block"; menuOpen=true; btnStart.src="C2_Start_Pressed.png";
 setTimeout(() => {
     btnStart.src="C2_Start_NotPressed.png";
-    press("Enter");
+    //press("Enter");
+    /*if (window.EJS_emulator) {
+        EJS_emulator.pause();
+    }*/
 }, 100);
 }
 function closeMenu(){ menu.style.display="none"; sp.style.display="none"; menuOpen=false; }
 
-btnResume.ontouchstart=()=> { btnResume.src="Menu_Button_highlighted.png"; 
+btnResume.ontouchstart=()=> { press("Enter"); btnResume.src="Menu_Button_highlighted.png"; 
 setTimeout(() => {
     btnResume.src="Menu_Button_normal.png";
-    closeMenu(); press("Enter");
+    closeMenu(); //press("Enter");
+    if (window.EJS_emulator) {
+        EJS_emulator.play();
+    }
 }, 100);
 }
 
