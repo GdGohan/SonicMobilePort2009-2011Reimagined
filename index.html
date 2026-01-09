@@ -260,6 +260,44 @@ const bootKill = setInterval(() => {
         clearInterval(bootKill);
     }
 }, 100);
+const waitVG = setInterval(() => {
+    if (window.EJS_emulator) {
+        hideVirtualGamepad(false);
+        clearInterval(waitVG);
+    }
+}, 100);
+
+function hideVirtualGamepad(temp = true) {
+    const selectors = [
+        ".ejs_virtualGamepad_left",
+        ".ejs_virtualGamepad_right",
+    ];
+
+    selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.style.display = "none";
+            el.style.pointerEvents = "none";
+        });
+    });
+
+    if (temp) {
+        setTimeout(showVirtualGamepad, 14000);
+    }
+}
+
+function showVirtualGamepad() {
+    const selectors = [
+        ".ejs_virtualGamepad_left",
+        ".ejs_virtualGamepad_right",
+    ];
+
+    selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.style.display = "";
+            el.style.pointerEvents = "";
+        });
+    });
+}
 
 function hideEJSMenu(temp = true) {
     const selectors = [
@@ -269,7 +307,6 @@ function hideEJSMenu(temp = true) {
     selectors.forEach(sel => {
         document.querySelectorAll(sel).forEach(el => {
             el.style.display = "none";
-            el.style.pointerEvents = "none";
         });
     });
 
@@ -285,8 +322,7 @@ function showEJSMenu() {
 
     selectors.forEach(sel => {
         document.querySelectorAll(sel).forEach(el => {
-            el.style.display = "";
-            el.style.pointerEvents = "";
+            el.style.display = "flex";
         });
     });
 }
