@@ -242,7 +242,7 @@ html,body{
 <div id="tiles"></div>
 <img id="btnStart" src="C2_Start_NotPressed.png">
 <img id="btnSpace" src="A_Button_NotPressed.png">
-<img id="dpad" src="C2_DPAD_NotPressed.png">
+<img id="dpad" src="C2_DPad_NotPressed.png">
 
 <!-- EmulatorJS -->
 <script src="data/loader.js"></script>
@@ -553,7 +553,7 @@ dpad.ontouchend = () => {
     ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].forEach(k=>{
         sendKeyToEmulator(KEYMAP[k], false);
     });
-    dpad.src = "C2_DPAD_NotPressed.png";
+    dpad.src = "C2_DPad_NotPressed.png";
 };
 </script>
 
