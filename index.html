@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" name="viewport" content="width=480">
 <title>EmulatorJS UI</title>
 
 <style>
@@ -249,11 +249,47 @@ html,body{
 <script>
 EJS_player = "#game";
 EJS_core = "segaMD";
-EJS_gameUrl = "Sonic_The_Hedgehog_W_REV01_h3C.bin";
+EJS_gameUrl = "Sonic The Hedgehog (W) (REVXB).gen";
 EJS_pathtodata = "data/";
 EJS_showVirtualPad = false;
+EJS_disableTouchControls = true; 
 EJS_startOnLoaded = true;
-EJS_hideSettings = true;
+const bootKill = setInterval(() => {
+    if (window.EJS_emulator) {
+        hideEJSMenu(true);
+        clearInterval(bootKill);
+    }
+}, 100);
+
+function hideEJSMenu(temp = true) {
+    const selectors = [
+        ".ejs_menu_bar",
+    ];
+
+    selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.style.display = "none";
+            el.style.pointerEvents = "none";
+        });
+    });
+
+    if (temp) {
+        setTimeout(showEJSMenu, 14000);
+    }
+}
+
+function showEJSMenu() {
+    const selectors = [
+        ".ejs_menu_bar",
+    ];
+
+    selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.style.display = "";
+            el.style.pointerEvents = "";
+        });
+    });
+}
 </script>
 
 <script>
