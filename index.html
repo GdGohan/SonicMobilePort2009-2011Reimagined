@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" name="viewport" content="width=480">
+<meta name="viewport"
+      content="width=480, height=320, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
 <title>EmulatorJS UI</title>
 
 <style>
@@ -69,11 +70,11 @@ html,body{
 #btnStart{
     position:absolute;
     opacity:0.5;
-    top:20px;
-    left:90%;
+    top:18px;
+    left:84%;
     transform:translateX(-50%);
-    width:80px;
-    height:25px;
+    width:70px;
+    height:15px;
     z-index:6;
 }
 
@@ -81,8 +82,8 @@ html,body{
 #btnSpace{
     position:absolute;
     opacity:0.5;
-    bottom:20px;
-    right:20px;
+    bottom:5px;
+    right:30px;
     width:88px;
     height:88px;
     z-index:6;
@@ -92,7 +93,7 @@ html,body{
 #menu{
     position:absolute;
     top:50%;
-    left:50%;
+    left:52%;
     transform:translate(-50%,-50%);
     display:none;
     z-index:7;
@@ -105,8 +106,8 @@ html,body{
 /* ===== BOTÃO ESPECIAL ===== */
 #specialBtn{
     position:absolute;
-    top:20px;
-    right:20px;
+    top:50px;
+    right:40px;
     width:64px;
     height:64px;
     z-index:6;
@@ -144,8 +145,8 @@ html,body{
 #dpad{
     position:absolute;
     opacity:0.5;
-    bottom:20px;
-    left:20px;
+    bottom:5px;
+    left:30px;
     width:115px;
     height:115px;
     z-index:6;
@@ -176,34 +177,25 @@ html,body{
 
 #tiles{
     position:fixed;
-    inset:0;
+    top:50%;
+    left:50%;
+    width:480px;
+    height:320px;
+    transform:translate(-50%,-50%);
     pointer-events:none;
     display:none;
     z-index:0;
 }
 
-/* DIREITA — normal */
-#tiles::after{
-    content:"";
+.tileL, .tileR{
     position:absolute;
-    top:50%;
-    left:calc(50vw + 240px);
-    width:calc(50vw - 240px);
+    top:0;
     height:320px;
-    transform:translateY(-50%);
     background:url("tile.png") repeat-x;
 }
 
-/* ESQUERDA — espelhado */
-#tiles::before{
-    content:"";
-    position:absolute;
-    top:50%;
-    right:calc(50vw + 240px);
-    width:calc(50vw - 240px);
-    height:320px;
-    transform:translateY(-50%) scaleX(-1);
-    background:url("tile.png") repeat-x;
+.tileR{
+    background-position-x: -10px;
 }
 
 </style>
@@ -236,13 +228,16 @@ html,body{
         <iframe id="video1" class="video" src="https://www.youtube.com/embed/ESEf089-6Xs?enablejsapi=1"></iframe>
         <iframe id="video2" class="video" src="https://www.youtube.com/embed/RW3eBWQ1IyQ?enablejsapi=1"></iframe>
     </div>
+    <img id="btnStart" src="C2_Start_NotPressed.png">
+    <img id="btnSpace" src="A_Button_NotPressed.png">
+    <img id="dpad" src="C2_DPad_NotPressed.png">
     <div id="logo"></div>
     <div id="fadeBlack"></div>
 </div>
-<div id="tiles"></div>
-<img id="btnStart" src="C2_Start_NotPressed.png">
-<img id="btnSpace" src="A_Button_NotPressed.png">
-<img id="dpad" src="C2_DPad_NotPressed.png">
+<div id="tiles">
+    <div class="tileL"></div>
+    <div class="tileR"></div>
+</div>
 
 <!-- EmulatorJS -->
 <script src="data/loader.js"></script>
@@ -251,8 +246,6 @@ EJS_player = "#game";
 EJS_core = "segaMD";
 EJS_gameUrl = "Sonic The Hedgehog (W) (REVXB).gen";
 EJS_pathtodata = "data/";
-EJS_showVirtualPad = false;
-EJS_disableTouchControls = true; 
 EJS_startOnLoaded = true;
 const bootKill = setInterval(() => {
     if (window.EJS_emulator) {
@@ -331,26 +324,56 @@ function showEJSMenu() {
 <script>
 sp.style.display="none";
 
+function lockScale(){
+    const sw = window.innerWidth;
+    const sh = window.innerHeight;
+
+    const scale = Math.min(sw / 480, sh / 320);
+
+    const root = document.getElementById("root");
+    const tiles = document.getElementById("tiles");
+
+    root.style.transform =
+        `translate(-50%, -50%) scale(${scale})`;
+
+    tiles.style.transform =
+        `translate(-50%, -50%) scale(${scale})`;
+
+    const extraW = (sw / scale - 480) / 2;
+
+    document.querySelector(".tileL").style.width = extraW + "px";
+    document.querySelector(".tileL").style.right = "480px";
+
+    document.querySelector(".tileR").style.width = extraW + "px";
+    document.querySelector(".tileR").style.left = "480px";
+}
+
+window.addEventListener("resize", lockScale);
+window.addEventListener("orientationchange", lockScale);
+lockScale();
+
 let stct = 0;
 
 let useStart = false;
 let check = false;
 let playing = false;
 const interval = setInterval(() => {
-  const AL = EJS_emulator?.Module?.AL;
-  if (!AL || !AL.currentCtx) return;
-  AL.currentCtx.sources.forEach(src => {
-    if (src.playbackState === src.PLAYING_STATE) {
-      playing = true;
-      logo.style.opacity = "0";
-      fadeBlack.style.opacity = "1";
-      setTimeout(() => { logo.style.display = "none"; }, 1000);
-    }
-  });
-  if (!useStart && playing) {
-    useStart = true;
-    setTimeout(() => { check = true; setTimeout(() => { stct++; }, 7000); }, 14000);
-    clearInterval(interval);
+  if (window.EJS_emulator) {
+      const AL = EJS_emulator?.Module?.AL;
+      if (!AL || !AL.currentCtx) return;
+      AL.currentCtx.sources.forEach(src => {
+        if (src.playbackState === src.PLAYING_STATE) {
+          playing = true;
+          logo.style.opacity = "0";
+          fadeBlack.style.opacity = "1";
+          setTimeout(() => { logo.style.display = "none"; }, 1000);
+        }
+      });
+      if (!useStart && playing) {
+        useStart = true;
+        setTimeout(() => { check = true; setTimeout(() => { check = false; stct++; }, 7000); }, 14000);
+        clearInterval(interval);
+      }
   }
 }, 100);
 
@@ -391,22 +414,21 @@ function releaseAll(){
 
 /* ===== START / MENU ===== */
 let menuOpen=false;
-btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { press("Enter"); openMenu(); } else if (check) { check = false; press("Enter"); stct++; } } }
+btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { /*press("Enter");*/ openMenu(); } else if (check) { press("Enter"); stct++; } } }
 function openMenu(){ menu.style.display="block"; sp.style.display="block"; menuOpen=true; btnStart.src="C2_Start_Pressed.png";
 setTimeout(() => {
     btnStart.src="C2_Start_NotPressed.png";
-    //press("Enter");
-    /*if (window.EJS_emulator) {
+    if (window.EJS_emulator) {
         EJS_emulator.pause();
-    }*/
+    }
 }, 100);
 }
 function closeMenu(){ menu.style.display="none"; sp.style.display="none"; menuOpen=false; }
 
-btnResume.ontouchstart=()=> { press("Enter"); btnResume.src="Menu_Button_highlighted.png"; 
+btnResume.ontouchstart=()=> { /*press("Enter");*/ btnResume.src="Menu_Button_highlighted.png"; 
 setTimeout(() => {
     btnResume.src="Menu_Button_normal.png";
-    closeMenu(); //press("Enter");
+    closeMenu();
     if (window.EJS_emulator) {
         EJS_emulator.play();
     }
@@ -441,7 +463,7 @@ btnFrame.onclick = () => {
         // START centralizado e mais baixo
         btnStart.style.left = "50%";
         btnStart.style.opacity = 1.0;
-        btnStart.style.top = "80%";
+        btnStart.style.top = "78%";
         btnStart.style.transform = "translateX(-50%)";
 
     } else {
@@ -453,9 +475,9 @@ btnFrame.onclick = () => {
         dpad.style.opacity = 0.5;
 
         // START volta ao lugar original
-        btnStart.style.left = "90%";
+        btnStart.style.left = "83%";
         btnStart.style.opacity = 0.5;
-        btnStart.style.top = "20px";
+        btnStart.style.top = "18px";
         btnStart.style.transform = "translateX(-50%)";
     }
 };
