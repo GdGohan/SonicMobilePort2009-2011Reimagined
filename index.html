@@ -50,7 +50,8 @@ html,body{
     width:480px;
     height:320px;
     display:block;
-    background:url("iPhone_Sonic1_Title_480x320.png") no-repeat;
+    /* iPhone_Sonic1_Title_480x320 */
+    background:url("logo/0.png") no-repeat;
     background-size:cover;
     pointer-events:none;
     z-index:9;
@@ -198,6 +199,48 @@ html,body{
     background-position-x: -10px;
 }
 
+@font-face {
+    font-family: 'PressStart2P';
+    src: url('roms/PressStart2P-Regular.ttf') format('truetype');
+}
+
+#romMenu {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    z-index:10;
+    background:rgba(0,0,0,0.7);
+    padding:20px;
+    border:2px solid #FFC;
+    font-family: 'PressStart2P', monospace;
+    color:#FFC;
+}
+
+#romMenu h2 {
+    text-align:center;
+    margin:0 0 15px 0;
+    color:#FFC;
+    font-size:12px;
+}
+
+#romList {
+    list-style:none;
+    padding:0;
+    margin:0;
+    text-align:center;
+}
+
+#romList li {
+    padding:6px 0;
+    cursor:pointer;
+}
+
+#romList li.selected {
+    background:#FFC;
+    color:#000;
+}
+
 </style>
 </head>
 
@@ -205,6 +248,10 @@ html,body{
 
 <div id="bg"></div>
 <div id="root">
+    <div id="romMenu">
+        <h2>SELECT THE ROM</h2>
+        <ul id="romList"></ul>
+    </div>
     <div id="frame"></div>
     <div id="game"></div>
 
@@ -240,30 +287,84 @@ html,body{
 </div>
 
 <!-- EmulatorJS -->
-<script src="data/loader.js"></script>
 <script>
-EJS_player = "#game";
-EJS_core = "segaMD";
-EJS_gameUrl = "Sonic The Hedgehog (W) (REVXB).gen";
-EJS_pathtodata = "data/";
-EJS_startOnLoaded = true;
-const bootKill = setInterval(() => {
-    if (window.EJS_emulator) {
-        hideEJSMenu(true);
-        clearInterval(bootKill);
-    }
-}, 100);
-const waitVG = setInterval(() => {
-    if (window.EJS_emulator) {
-        hideVirtualGamepad(false);
-        clearInterval(waitVG);
-    }
-}, 100);
+const romMenuEl = document.getElementById("romMenu");
+const romListEl = document.getElementById("romList");
+let roms = [];
+let selectedIndex = 0;
 
+// Funções que já existem no seu código
+function updateHighlight() {
+    Array.from(romListEl.children).forEach((li, i) => {
+        li.classList.toggle("selected", i === selectedIndex);
+    });
+}
+
+function startEmulatorWithRom(romFile) {
+    // Esconde o menu
+    romMenuEl.style.display = "none";
+
+    // Define as variáveis necessárias do EJS
+    window.EJS_player = "#game";
+    window.EJS_core = "segaMD";
+    window.EJS_gameUrl = "roms/" + romFile;
+    window.EJS_pathtodata = "data/";
+    window.EJS_startOnLoaded = true;
+
+    // Cria dinamicamente o loader.js
+    const script = document.createElement("script");
+    script.src = "data/loader.js";
+    script.onload = () => {
+        // Espera o emulador estar pronto
+        const waitEJS = setInterval(() => {
+            if (window.EJS_emulator) {
+                hideEJSMenu(true);
+                hideVirtualGamepad(false);
+                clearInterval(waitEJS);
+            }
+        }, 100);
+    };
+    document.body.appendChild(script);
+    const bootKill = setInterval(() => {
+        if (window.EJS_emulator) {
+            hideEJSMenu(true);
+            clearInterval(bootKill);
+        }
+    }, 100);
+    const waitVG = setInterval(() => {
+        if (window.EJS_emulator) {
+            hideVirtualGamepad(false);
+            clearInterval(waitVG);
+        }
+    }, 100);
+}
+
+// Carregar lista de ROMs via JSON e adicionar clique
+fetch('roms/roms.json')
+  .then(res => res.json())
+  .then(data => {
+      roms = data;
+      roms.forEach((rom, i) => {
+          const li = document.createElement("li");
+          li.textContent = rom;
+          if (i === selectedIndex) li.classList.add("selected");
+
+          li.addEventListener("click", () => {
+              if (selectedIndex !== i) {
+              selectedIndex = i;
+              updateHighlight();
+              document.getElementById("logo").style.background = `url('logo/${i}.png') no-repeat`;
+              } else startEmulatorWithRom(rom);
+          });
+
+          romListEl.appendChild(li);
+      });
+  });
 function hideVirtualGamepad(temp = true) {
     const selectors = [
         ".ejs_virtualGamepad_left",
         ".ejs_virtualGamepad_right",
+        ".ejs_virtualGamepad_bottom",
     ];
 
     selectors.forEach(sel => {
@@ -282,6 +383,7 @@ function showVirtualGamepad() {
     const selectors = [
         ".ejs_virtualGamepad_left",
         ".ejs_virtualGamepad_right",
+        ".ejs_virtualGamepad_bottom",
     ];
 
     selectors.forEach(sel => {
@@ -317,13 +419,9 @@ function showEJSMenu() {
         el.style.visibility = "visible";
         el.style.pointerEvents = "auto";
         el.style.opacity = "1";
-
-        // IMPORTANTE: Não mexemos no "display". 
-        // Deixamos o CSS original (emulator.min.css) controlar se é flex ou não.
     });
 }
 </script>
-
 <script>
 sp.style.display="none";
 
@@ -367,17 +465,16 @@ const interval = setInterval(() => {
       const AL = EJS_emulator?.Module?.AL;
       if (!AL || !AL.currentCtx) return;
       AL.currentCtx.sources.forEach(src => {
-        if (src.playbackState === src.PLAYING_STATE) {
-          playing = true;
-          logo.style.opacity = "0";
-          fadeBlack.style.opacity = "1";
-          setTimeout(() => { logo.style.display = "none"; }, 1000);
-        }
+         if (src.playbackState === src.PLAYING_STATE) {
+             playing = true;
+             logo.style.opacity = "0";
+             fadeBlack.style.opacity = "1";
+             setTimeout(() => { logo.style.display = "none"; }, 1000);
+         }
       });
       if (!useStart && playing) {
-        useStart = true;
-        setTimeout(() => { check = true; setTimeout(() => { stct++; }, 7000); }, 14000);
-        clearInterval(interval);
+          useStart = true;
+          clearInterval(interval);
       }
   }
 }, 100);
@@ -395,8 +492,10 @@ const KEYMAP = {
     ArrowDown: 5,
     ArrowLeft: 6,
     ArrowRight: 7,
-    Z: 0,
-    Enter: 3
+    B: 0,
+    Enter: 3,
+    Z: 1,
+    C: 8
 };
 
 function sendKeyToEmulator(index, pressed) {
@@ -419,7 +518,7 @@ function releaseAll(){
 
 /* ===== START / MENU ===== */
 let menuOpen=false;
-btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { /*press("Enter");*/ openMenu(); } else if (check) { check = false; press("Enter"); stct++; } } }
+btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { /*press("Enter");*/ openMenu(); } }
 function openMenu(){ menu.style.display="block"; sp.style.display="block"; menuOpen=true; btnStart.src="C2_Start_Pressed.png";
 setTimeout(() => {
     btnStart.src="C2_Start_NotPressed.png";
@@ -442,6 +541,82 @@ setTimeout(() => {
 
 btnResume.ontouchend=()=> { releaseAll(); }
 btnStart.ontouchend = () => { releaseAll(); }
+
+function addEmuTouchListener() {
+    const emuEl = document.querySelector("#game");
+    if (!emuEl) return;
+
+    const activeTouches = {}; // map: touchId -> key
+
+    emuEl.addEventListener('touchstart', e => {
+        const rect = emuEl.getBoundingClientRect();
+        const rect2 = btnSpace.getBoundingClientRect();
+
+        for (let t of e.changedTouches) {
+            const x = t.clientX;
+            const y = t.clientY;
+            let key = null;
+
+            const zoneHeight = rect2.height;
+            const topZone = rect2.top - zoneHeight;
+            const midZone = rect2.top - zoneHeight / 2;
+            if (x >= rect2.left && x <= rect2.right &&
+                y >= topZone && y < rect2.top) {
+        
+                if (y < midZone) {
+                    key = "B";
+                } else {
+                    key = "C";
+                }
+            } else {
+                const rect = emuEl.getBoundingClientRect();
+                const rx = x - rect.left;
+                const ry = y - rect.top;
+        
+                if (rx >= rect.width * 0.4 &&
+                    rx <= rect.width * 0.75 &&
+                    ry >= rect.height * 0.6) {
+                    key = "Enter";
+                }
+            }
+        
+            if (key) {
+                press(key);
+                activeTouches[t.identifier] = key;
+            }
+        }
+    });
+
+    emuEl.addEventListener('touchend', e => {
+        for (let t of e.changedTouches) {
+            const key = activeTouches[t.identifier];
+            if (key) {
+                sendKeyToEmulator(KEYMAP[key], false);
+                pressed = pressed.filter(k => k !== key);
+                delete activeTouches[t.identifier];
+            }
+        }
+    });
+
+    emuEl.addEventListener('touchcancel', e => {
+        for (let t of e.changedTouches) {
+            const key = activeTouches[t.identifier];
+            if (key) {
+                sendKeyToEmulator(KEYMAP[key], false);
+                pressed = pressed.filter(k => k !== key);
+                delete activeTouches[t.identifier];
+            }
+        }
+    });
+}
+
+// Chamar depois que a ROM iniciar
+const waitEmu = setInterval(() => {
+    if (document.querySelector("#game")) {
+        addEmuTouchListener();
+        clearInterval(waitEmu);
+    }
+}, 100);
 
 /* ===== FRAME ===== */
 let framed=false;
@@ -528,8 +703,8 @@ btnSpace.ontouchcancel = btnSpace.ontouchend;
 
 /* ===== D-PAD 8 DIREÇÕES POR ÂNGULO ===== */
 const dpad=document.getElementById("dpad");
-const center=64;
-const dead=20;
+const center=57.5;
+const dead=17;
 
 function handleDpadTouch(e){
     e.preventDefault();
