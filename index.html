@@ -330,18 +330,16 @@ function resetEmulator() {
 
 function bootMenu() {
     romMenuEl.style.display = "";
-    setTimeout(() => { closeBootMenu = true; }, 200);
+    setTimeout(() => { closeBootMenu = true; }, 500);
 }
 
 document.addEventListener("touchstart", e => {
 if (!closeBootMenu) return;
-setTimeout(() => {
 if (romMenuEl.style.display !== "none" &&
     !romMenuEl.contains(e.target)) {
     romMenuEl.style.display = "none";
     closeBootMenu = false;
 }
-}, 100);
 });
 
 function startEmulatorWithRom(romFile) {
@@ -353,6 +351,7 @@ function startEmulatorWithRom(romFile) {
     playing = false;
     
     // Esconde o menu
+    closeBootMenu = false;
     romMenuEl.style.display = "none";
 
     // Define as variáveis necessárias do EJS
