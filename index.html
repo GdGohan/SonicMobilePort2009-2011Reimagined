@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<link rel="icon" href="Icon.png" type="image/png">
 <meta name="viewport"
       content="width=480, height=320, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
 <title>EmulatorJS UI</title>
@@ -288,6 +289,15 @@ html,body{
 
 <!-- EmulatorJS -->
 <script>
+
+sp.style.display="none";
+
+let useStart;
+let playing;
+let closeBootMenu;
+let timeout;
+let timeout2;
+
 const romMenuEl = document.getElementById("romMenu");
 const romListEl = document.getElementById("romList");
 let roms = [];
@@ -300,7 +310,46 @@ function updateHighlight() {
     });
 }
 
+function showLogo() {
+    logo.style.display = "block";
+    logo.style.opacity = "1";
+    fadeBlack.style.opacity = "0";
+}
+
+function resetEmulator() {
+    if (window.EJS_emulator) {
+        try {
+            EJS_emulator.pause();
+            EJS_emulator = null;
+        } catch(e){}
+    }
+    const game = document.getElementById("game");
+    game.innerHTML = "";
+    document.querySelectorAll('script[src*="loader.js"]').forEach(s => s.remove());
+}
+
+function bootMenu() {
+    romMenuEl.style.display = "";
+    setTimeout(() => { closeBootMenu = true; }, 100);
+    clearTimeout(timeout);
+    clearTimeout(timeout2);
+}
+
+document.addEventListener("touchstart", e => {
+if (!closeBootMenu) return;
+if (romMenuEl.style.display !== "none" &&
+        !romMenuEl.contains(e.target)) {
+        romMenuEl.style.display = "none";
+        closeBootMenu = false;
+    }
+});
+
 function startEmulatorWithRom(romFile) {
+    showLogo();
+    resetEmulator();
+    useStart = false;
+    playing = false;
+    
     // Esconde o menu
     romMenuEl.style.display = "none";
 
@@ -325,18 +374,6 @@ function startEmulatorWithRom(romFile) {
         }, 100);
     };
     document.body.appendChild(script);
-    const bootKill = setInterval(() => {
-        if (window.EJS_emulator) {
-            hideEJSMenu(true);
-            clearInterval(bootKill);
-        }
-    }, 100);
-    const waitVG = setInterval(() => {
-        if (window.EJS_emulator) {
-            hideVirtualGamepad(false);
-            clearInterval(waitVG);
-        }
-    }, 100);
 }
 
 // Carregar lista de ROMs via JSON e adicionar clique
@@ -360,6 +397,7 @@ fetch('roms/roms.json')
           romListEl.appendChild(li);
       });
   });
+
 function hideVirtualGamepad(temp = true) {
     const selectors = [
         ".ejs_virtualGamepad_left",
@@ -375,7 +413,7 @@ function hideVirtualGamepad(temp = true) {
     });
 
     if (temp) {
-        setTimeout(showVirtualGamepad, 14000);
+        timeout = setTimeout(showVirtualGamepad, 14000);
     }
 }
 
@@ -407,7 +445,7 @@ function hideEJSMenu(temp = true) {
     });
 
     if (temp) {
-        setTimeout(showEJSMenu, 14000);
+        timeout2 = setTimeout(showEJSMenu, 14000);
     }
 }
 
@@ -421,9 +459,12 @@ function showEJSMenu() {
         el.style.opacity = "1";
     });
 }
-</script>
-<script>
-sp.style.display="none";
+
+function isEJSMenuVisible() {
+    const menu = document.querySelector(".ejs_menu_bar");
+    if (!menu) return false;
+    return !menu.classList.contains("ejs_menu_bar_hidden");
+}
 
 function lockScale(){
     const sw = window.innerWidth;
@@ -455,13 +496,8 @@ window.addEventListener("resize", lockScale);
 window.addEventListener("orientationchange", lockScale);
 lockScale();
 
-let stct = 0;
-
-let useStart = false;
-let check = false;
-let playing = false;
 const interval = setInterval(() => {
-  if (window.EJS_emulator) {
+  if (window.EJS_emulator && !useStart) {
       const AL = EJS_emulator?.Module?.AL;
       if (!AL || !AL.currentCtx) return;
       AL.currentCtx.sources.forEach(src => {
@@ -472,9 +508,9 @@ const interval = setInterval(() => {
              setTimeout(() => { logo.style.display = "none"; }, 1000);
          }
       });
-      if (!useStart && playing) {
+      if (playing) {
           useStart = true;
-          clearInterval(interval);
+          //clearInterval(interval);
       }
   }
 }, 100);
@@ -572,8 +608,16 @@ function addEmuTouchListener() {
                 const rect = emuEl.getBoundingClientRect();
                 const rx = x - rect.left;
                 const ry = y - rect.top;
+                
+                if (rx >= 0 &&
+                    rx <= rect.width * 0.2 &&
+                    ry >= 0 &&
+                    ry <= rect.height * 0.8) {
+                    bootMenu();
+                    return;
+                }
         
-                if (rx >= rect.width * 0.4 &&
+                if (!isEJSMenuVisible() && rx >= rect.width * 0.4 &&
                     rx <= rect.width * 0.75 &&
                     ry >= rect.height * 0.6) {
                     key = "Enter";
