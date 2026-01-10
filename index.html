@@ -330,23 +330,25 @@ function resetEmulator() {
 
 function bootMenu() {
     romMenuEl.style.display = "";
-    setTimeout(() => { closeBootMenu = true; }, 100);
-    clearTimeout(timeout);
-    clearTimeout(timeout2);
+    setTimeout(() => { closeBootMenu = true; }, 200);
 }
 
 document.addEventListener("touchstart", e => {
 if (!closeBootMenu) return;
+setTimeout(() => {
 if (romMenuEl.style.display !== "none" &&
-        !romMenuEl.contains(e.target)) {
-        romMenuEl.style.display = "none";
-        closeBootMenu = false;
-    }
+    !romMenuEl.contains(e.target)) {
+    romMenuEl.style.display = "none";
+    closeBootMenu = false;
+}
+}, 100);
 });
 
 function startEmulatorWithRom(romFile) {
     showLogo();
     resetEmulator();
+    clearTimeout(timeout);
+    clearTimeout(timeout2);
     useStart = false;
     playing = false;
     
@@ -612,7 +614,7 @@ function addEmuTouchListener() {
                 if (rx >= 0 &&
                     rx <= rect.width * 0.2 &&
                     ry >= 0 &&
-                    ry <= rect.height * 0.8) {
+                    ry <= rect.height * 0.2) {
                     bootMenu();
                     return;
                 }
