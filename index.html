@@ -293,14 +293,15 @@ function showVirtualGamepad() {
 }
 
 function hideEJSMenu(temp = true) {
-    const selectors = [
-        ".ejs_menu_bar",
-    ];
+    const menus = document.querySelectorAll(".ejs_menu_bar");
 
-    selectors.forEach(sel => {
-        document.querySelectorAll(sel).forEach(el => {
-            el.style.display = "none";
-        });
+    menus.forEach(el => {
+        // Torna invisível e bloqueia qualquer interação (clique/hover)
+        el.style.visibility = "hidden";
+        el.style.pointerEvents = "none";
+        
+        // Garante que o menu de ajustes (settings) também não seja clicável se estiver aberto
+        el.style.opacity = "0";
     });
 
     if (temp) {
@@ -309,14 +310,16 @@ function hideEJSMenu(temp = true) {
 }
 
 function showEJSMenu() {
-    const selectors = [
-        ".ejs_menu_bar",
-    ];
+    const menus = document.querySelectorAll(".ejs_menu_bar");
 
-    selectors.forEach(sel => {
-        document.querySelectorAll(sel).forEach(el => {
-            el.style.display = "flex";
-        });
+    menus.forEach(el => {
+        // Restaura a visibilidade e a capacidade de clique
+        el.style.visibility = "visible";
+        el.style.pointerEvents = "auto";
+        el.style.opacity = "1";
+
+        // IMPORTANTE: Não mexemos no "display". 
+        // Deixamos o CSS original (emulator.min.css) controlar se é flex ou não.
     });
 }
 </script>
@@ -333,19 +336,21 @@ function lockScale(){
     const root = document.getElementById("root");
     const tiles = document.getElementById("tiles");
 
-    root.style.transform =
-        `translate(-50%, -50%) scale(${scale})`;
+    root.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    tiles.style.transform = `translate(-50%, -50%) scale(${scale})`;
 
-    tiles.style.transform =
-        `translate(-50%, -50%) scale(${scale})`;
-
+    // ajustar tiles lateral
     const extraW = (sw / scale - 480) / 2;
-
     document.querySelector(".tileL").style.width = extraW + "px";
     document.querySelector(".tileL").style.right = "480px";
-
     document.querySelector(".tileR").style.width = extraW + "px";
     document.querySelector(".tileR").style.left = "480px";
+
+    // Ajustar botão Start no landscape
+    const btnStart = document.getElementById("btnStart");
+    btnStart.style.left = `${480 * 0.84}px`; // 84%
+    btnStart.style.top = "18px";
+    btnStart.style.transform = "translateX(-50%)";
 }
 
 window.addEventListener("resize", lockScale);
@@ -371,7 +376,7 @@ const interval = setInterval(() => {
       });
       if (!useStart && playing) {
         useStart = true;
-        setTimeout(() => { check = true; setTimeout(() => { check = false; stct++; }, 7000); }, 14000);
+        setTimeout(() => { check = true; setTimeout(() => { stct++; }, 7000); }, 14000);
         clearInterval(interval);
       }
   }
@@ -414,7 +419,7 @@ function releaseAll(){
 
 /* ===== START / MENU ===== */
 let menuOpen=false;
-btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { /*press("Enter");*/ openMenu(); } else if (check) { press("Enter"); stct++; } } }
+btnStart.ontouchstart=()=> { if (!menuOpen && useStart) { if (stct > 1 && !check) { /*press("Enter");*/ openMenu(); } else if (check) { check = false; press("Enter"); stct++; } } }
 function openMenu(){ menu.style.display="block"; sp.style.display="block"; menuOpen=true; btnStart.src="C2_Start_Pressed.png";
 setTimeout(() => {
     btnStart.src="C2_Start_NotPressed.png";
@@ -534,7 +539,7 @@ function handleDpadTouch(e){
     const y = t.clientY - r.top - center;
 
     if(Math.abs(x)<dead && Math.abs(y)<dead){
-        dpad.src="C2_DPAD_NotPressed.png";
+        dpad.src="C2_DPad_NotPressed.png";
         return;
     }
 
