@@ -51,7 +51,7 @@ html,body{
     height:320px;
     display:block;
     /* iPhone_Sonic1_Title_480x320 */
-    background:url("logo/0.png") no-repeat;
+    background:url("logos/0.png") no-repeat;
     background-size:cover;
     pointer-events:none;
     z-index:9;
@@ -353,7 +353,7 @@ fetch('roms/roms.json')
               if (selectedIndex !== i) {
               selectedIndex = i;
               updateHighlight();
-              document.getElementById("logo").style.background = `url('logo/${i}.png') no-repeat`;
+              document.getElementById("logo").style.background = `url('logos/${i}.png') no-repeat`;
               } else startEmulatorWithRom(rom);
           });
 
